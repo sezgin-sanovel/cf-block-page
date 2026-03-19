@@ -328,19 +328,36 @@ function isIPv4(ip) {
     return /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
 }
 
+// Returns true if the IP is IPv6
+function isIPv6(ip) {
+    return ip.includes(':');
+}
+
+// Append IP to the given R2 file if not already present
+async function appendToList(bucket, key, ip) {
+    const existing = await bucket.get(key);
+    const prev = existing ? await existing.text() : '';
+    const entries = prev ? prev.split('\n').filter(Boolean) : [];
+
+    if (entries.includes(ip)) return;
+
+    entries.push(ip);
+
+    await bucket.put(key, entries.join('\n'), {
+        httpMetadata: { contentType: 'text/plain; charset=utf-8' },
+    });
+}
+
 // Log the blocked request to R2 and console
 async function logBlockedRequest(meta, refId, env) {
     console.log('[BLOCKED]', JSON.stringify({ ref: refId, ...meta }));
 
-    if (env.BLOCK_LOG && isIPv4(meta.ip)) {
-        const key = 'export/ip_blocked.txt';
-        const existing = await env.BLOCK_LOG.get(key);
-        const prev = existing ? await existing.text() : '';
-        const updated = prev ? `${prev.trimEnd()}\n${meta.ip}\n` : `${meta.ip}\n`;
+    if (!env.BLOCK_LOG) return;
 
-        await env.BLOCK_LOG.put(key, updated, {
-            httpMetadata: { contentType: 'text/plain' },
-        });
+    if (isIPv4(meta.ip)) {
+        await appendToList(env.BLOCK_LOG, 'export/ipv4.txt', meta.ip);
+    } else if (isIPv6(meta.ip)) {
+        await appendToList(env.BLOCK_LOG, 'export/ipv6.txt', meta.ip);
     }
 }
 
