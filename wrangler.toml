@@ -6,7 +6,6 @@ routes = [
   { pattern = "cti.sanovel.com.tr/blocked", zone_name = "sanovel.com.tr" }
 ]
  
-# Phase 2 - R2 bucket baglantisi (simdilik devre disi)
-# [[r2_buckets]]
-# binding = "BLOCK_LOG"
-# bucket_name = "security-block-logs"
+[[r2_buckets]]
+binding = "BLOCK_LOG"
+bucket_name = "ti-bucket"

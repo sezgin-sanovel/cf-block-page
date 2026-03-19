@@ -323,15 +323,26 @@ function extractRequestMeta(request) {
     };
 }
 
-// Log the blocked request - console only for now, R2 later
-function logBlockedRequest(meta, refId) {
+// Log the blocked request to R2 and console
+async function logBlockedRequest(meta, refId, env) {
     const entry = {
         ref: refId,
         ...meta,
     };
 
-    // TODO: Replace with R2 write when ready
     console.log('[BLOCKED]', JSON.stringify(entry));
+
+    if (env.BLOCK_LOG) {
+        const timestamp = meta.timestamp.replace(/[:.]/g, '-');
+        const key = `export/blocked_${timestamp}_${refId}.txt`;
+        const content = Object.entries(entry)
+            .map(([k, v]) => `${k}: ${v}`)
+            .join('\n');
+
+        await env.BLOCK_LOG.put(key, content, {
+            httpMetadata: { contentType: 'text/plain' },
+        });
+    }
 }
 
 // Build the HTML response with interpolated values
@@ -356,8 +367,7 @@ export default {
         const meta = extractRequestMeta(request);
         const refId = generateRefId();
 
-        // Log to console (phase 1) - swap for R2 in phase 2
-        logBlockedRequest(meta, refId);
+        await logBlockedRequest(meta, refId, env);
 
         const html = buildBlockPage(meta, refId);
 
