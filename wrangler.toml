@@ -3,7 +3,7 @@ main = "worker.js"
 compatibility_date = "2024-01-01"
  
 routes = [
-  { pattern = "logpush-cti.sanovel.com.tr/*", zone_name = "sanovel.com.tr" }
+  { pattern = "logpush-cti.sanovel.com/*", zone_name = "sanovel.com" }
 ]
  
 [[r2_buckets]]
