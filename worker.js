@@ -323,23 +323,22 @@ function extractRequestMeta(request) {
     };
 }
 
+// Returns true if the IP is IPv4
+function isIPv4(ip) {
+    return /^\d{1,3}(\.\d{1,3}){3}$/.test(ip);
+}
+
 // Log the blocked request to R2 and console
 async function logBlockedRequest(meta, refId, env) {
-    const entry = {
-        ref: refId,
-        ...meta,
-    };
+    console.log('[BLOCKED]', JSON.stringify({ ref: refId, ...meta }));
 
-    console.log('[BLOCKED]', JSON.stringify(entry));
+    if (env.BLOCK_LOG && isIPv4(meta.ip)) {
+        const key = 'export/ip_blocked.txt';
+        const existing = await env.BLOCK_LOG.get(key);
+        const prev = existing ? await existing.text() : '';
+        const updated = prev ? `${prev.trimEnd()}\n${meta.ip}\n` : `${meta.ip}\n`;
 
-    if (env.BLOCK_LOG) {
-        const timestamp = meta.timestamp.replace(/[:.]/g, '-');
-        const key = `export/blocked_${timestamp}_${refId}.txt`;
-        const content = Object.entries(entry)
-            .map(([k, v]) => `${k}: ${v}`)
-            .join('\n');
-
-        await env.BLOCK_LOG.put(key, content, {
+        await env.BLOCK_LOG.put(key, updated, {
             httpMetadata: { contentType: 'text/plain' },
         });
     }
