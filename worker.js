@@ -472,8 +472,9 @@ export default {
         const url = new URL(request.url);
 
         // Logpush endpoint
-        if (url.pathname === '/logpush' && request.method === 'POST') {
-            return handleLogpush(request, env);
+        if (url.pathname === '/logpush') {
+            if (request.method === 'POST') return handleLogpush(request, env);
+            return new Response('OK', { status: 200 });
         }
 
         // Block page
