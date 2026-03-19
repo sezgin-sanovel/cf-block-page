@@ -421,12 +421,63 @@ function buildBlockPage(meta, refId) {
     return html;
 }
 
+// Handle Logpush POST - Cloudflare sends NDJSON (one JSON event per line)
+async function handleLogpush(request, env) {
+    // Validate secret
+    const secret = request.headers.get('X-Logpush-Secret');
+    if (!env.LOGPUSH_SECRET || secret !== env.LOGPUSH_SECRET) {
+        return new Response('Unauthorized', { status: 401 });
+    }
+
+    const body = await request.text();
+    const lines = body.split('\n').filter(Boolean);
+
+    for (const line of lines) {
+        let event;
+        try { event = JSON.parse(line); } catch { continue; }
+
+        // Only process block actions
+        if (event.Action !== 'block') continue;
+
+        const ip = event.ClientIP;
+        if (!ip) continue;
+
+        console.log('[LOGPUSH_BLOCK]', JSON.stringify({
+            ip,
+            ruleId: event.RuleID,
+            country: event.ClientCountry,
+            rayId: event.RayID,
+            datetime: event.Datetime,
+        }));
+
+        if (env.BLOCK_LOG) {
+            if (isIPv4(ip)) {
+                await appendToList(env.BLOCK_LOG, 'export/ipv4_blocked.txt', ip);
+            } else if (isIPv6(ip)) {
+                await appendToList(env.BLOCK_LOG, 'export/ipv6_blocked.txt', ip);
+            }
+        }
+
+        if (isIPv4(ip)) {
+            await addToCloudflareList(ip, env);
+        }
+    }
+
+    return new Response('OK', { status: 200 });
+}
+
 export default {
     async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+
+        // Logpush endpoint
+        if (url.pathname === '/logpush' && request.method === 'POST') {
+            return handleLogpush(request, env);
+        }
+
+        // Block page
         const meta = extractRequestMeta(request);
         const refId = generateRefId();
-
-        await logBlockedRequest(meta, refId, env);
 
         const html = buildBlockPage(meta, refId);
 

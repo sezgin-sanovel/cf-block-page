@@ -13,3 +13,7 @@ bucket_name = "ti-bucket"
 [vars]
 CLOUDFLARE_ACCOUNT_ID = "e2e02f5f5da327c80740271af96bd14b"
 CLOUDFLARE_AUTO_BLOCK_LIST_ID = "d51eda63c31846e6b3a43130318232ad"
+
+# Secrets (set via dashboard or wrangler secret put):
+# CLOUDFLARE_API_TOKEN
+# LOGPUSH_SECRET
