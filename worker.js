@@ -348,6 +348,27 @@ async function appendToList(bucket, key, ip) {
     });
 }
 
+// Add IP to Cloudflare auto_blocked_ips list
+async function addToCloudflareList(ip, env) {
+    if (!env.CLOUDFLARE_API_TOKEN) return;
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/rules/lists/${env.CLOUDFLARE_AUTO_BLOCK_LIST_ID}/items`;
+
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([{ ip }]),
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        console.error('[CF_LIST_ERROR]', res.status, err);
+    }
+}
+
 // Log the blocked request to R2 and console
 async function logBlockedRequest(meta, refId, env) {
     console.log('[BLOCKED]', JSON.stringify({ ref: refId, ...meta }));
@@ -356,6 +377,7 @@ async function logBlockedRequest(meta, refId, env) {
 
     if (isIPv4(meta.ip)) {
         await appendToList(env.BLOCK_LOG, 'export/ipv4_blocked.txt', meta.ip);
+        await addToCloudflareList(meta.ip, env);
     } else if (isIPv6(meta.ip)) {
         await appendToList(env.BLOCK_LOG, 'export/ipv6_blocked.txt', meta.ip);
     }
