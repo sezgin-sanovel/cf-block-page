@@ -1,0 +1,12 @@
+name = "security-block-page"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+ 
+# Route: Cloudflare Security Rule "Block" action yerine
+# bu worker'a yonlendirecegiz. Route'u kendi domain'ine gore ayarla.
+# routes = [{ pattern = "example.com/blocked", zone_name = "example.com" }]
+ 
+# Phase 2 - R2 bucket baglantisi (simdilik devre disi)
+# [[r2_buckets]]
+# binding = "BLOCK_LOG"
+# bucket_name = "security-block-logs"
