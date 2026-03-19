@@ -423,8 +423,9 @@ function buildBlockPage(meta, refId) {
 
 // Handle Logpush POST - Cloudflare sends NDJSON (one JSON event per line)
 async function handleLogpush(request, env) {
-    // Validate secret
-    const secret = request.headers.get('X-Logpush-Secret');
+    // Validate secret (query param: /logpush?secret=xxx)
+    const url = new URL(request.url);
+    const secret = url.searchParams.get('secret');
     if (!env.LOGPUSH_SECRET || secret !== env.LOGPUSH_SECRET) {
         return new Response('Unauthorized', { status: 401 });
     }
