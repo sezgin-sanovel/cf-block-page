@@ -355,10 +355,21 @@ async function logBlockedRequest(meta, refId, env) {
     if (!env.BLOCK_LOG) return;
 
     if (isIPv4(meta.ip)) {
-        await appendToList(env.BLOCK_LOG, 'export/ipv4.txt', meta.ip);
+        await appendToList(env.BLOCK_LOG, 'export/ipv4_blocked.txt', meta.ip);
     } else if (isIPv6(meta.ip)) {
-        await appendToList(env.BLOCK_LOG, 'export/ipv6.txt', meta.ip);
+        await appendToList(env.BLOCK_LOG, 'export/ipv6_blocked.txt', meta.ip);
     }
+}
+
+// Mask last two octets of IPv4: 176.55.107.90 → 176.55.*.*
+function maskIP(ip) {
+    if (isIPv4(ip)) {
+        const parts = ip.split('.');
+        return `${parts[0]}.${parts[1]}.*.*`;
+    }
+    // IPv6: mask last 4 groups
+    const parts = ip.split(':');
+    return parts.slice(0, 4).join(':') + ':****:****:****:****';
 }
 
 // Build the HTML response with interpolated values
@@ -368,7 +379,7 @@ function buildBlockPage(meta, refId) {
         : meta.url;
 
     const html = BLOCK_PAGE_HTML
-        .replace(/{{CLIENT_IP}}/g, meta.ip)
+        .replace(/{{CLIENT_IP}}/g, maskIP(meta.ip))
         .replace(/{{COUNTRY}}/g, meta.country.toUpperCase())
         .replace(/{{BLOCKED_URL}}/g, displayUrl)
         .replace(/{{RULE_ID}}/g, meta.rayId || 'SECURITY-RULE')
