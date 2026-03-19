@@ -307,15 +307,25 @@ function extractRequestMeta(request) {
     const url = new URL(request.url);
     const cf = request.cf || {};
 
+    // When redirected via Custom Error rule, real IP/country come as query params
+    const ip = url.searchParams.get('cip')
+        || request.headers.get('CF-Connecting-IP')
+        || 'unknown';
+
+    const country = url.searchParams.get('cc')
+        || cf.country
+        || request.headers.get('CF-IPCountry')
+        || 'unknown';
+
     return {
-        ip: request.headers.get('CF-Connecting-IP') || 'unknown',
-        country: cf.country || request.headers.get('CF-IPCountry') || 'unknown',
+        ip,
+        country,
         asn: cf.asn || null,
         asOrganization: cf.asOrganization || null,
         city: cf.city || null,
         userAgent: request.headers.get('User-Agent') || 'unknown',
         method: request.method,
-        url: url.pathname + (url.search || ''),
+        url: url.pathname,
         host: url.hostname,
         referer: request.headers.get('Referer') || null,
         timestamp: new Date().toISOString(),
