@@ -63,17 +63,17 @@ async function handleLogpush(request, env) {
         let event;
         try { event = JSON.parse(line); } catch { continue; }
 
-        // Only process block actions
-        if (event.Action !== 'block') continue;
+        // Network Analytics: Outcome=drop, direction=ingress
+        if (event.Outcome !== 'drop') continue;
+        if (event.Direction && event.Direction !== 'ingress') continue;
 
-        const ip = event.ClientIP;
+        const ip = event.IPSourceAddress;
         if (!ip) continue;
 
         console.log('[LOGPUSH_BLOCK]', JSON.stringify({
             ip,
             ruleId: event.RuleID,
-            country: event.ClientCountry,
-            rayId: event.RayID,
+            country: event.SourceCountry,
             datetime: event.Datetime,
         }));
 
